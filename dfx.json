@@ -1,0 +1,29 @@
+{
+  "canisters": {
+    "metamask_ic_backend": {
+      "main": "src/metamask_ic_backend/main.mo",
+      "type": "motoko"
+    },
+    "metamask_ic_frontend": {
+      "dependencies": [
+        "metamask_ic_backend"
+      ],
+      "frontend": {
+        "entrypoint": "src/metamask_ic_frontend/src/index.html"
+      },
+      "source": [
+        "src/metamask_ic_frontend/assets",
+        "dist/metamask_ic_frontend/"
+      ],
+      "type": "assets"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
