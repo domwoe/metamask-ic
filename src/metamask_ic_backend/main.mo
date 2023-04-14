@@ -1,5 +1,8 @@
+import Debug "mo:base/Debug";
+
 actor {
-  public query func greet(name : Text) : async Text {
+  public shared(msg) func greet(name : Text) : async Text {
+    Debug.print(debug_show(msg.caller));
     return "Hello, " # name # "!";
   };
 };

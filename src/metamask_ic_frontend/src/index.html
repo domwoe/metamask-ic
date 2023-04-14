@@ -13,7 +13,12 @@
       <img src="logo2.svg" alt="DFINITY logo" />
       <br />
       <br />
-      <form action="#">
+      <form id="login_form" action="#">
+        <button type="submit">Coonect with MetaMask</button>
+      </form>
+      <section id="login"></section>
+    </main>
+      <form id="greeting_form" action="#">
         <label for="name">Enter your name: &nbsp;</label>
         <input id="name" alt="Name" type="text" />
         <button type="submit">Click Me!</button>
@@ -21,4 +26,8 @@
       <section id="greeting"></section>
     </main>
   </body>
+  <script charset="utf-8"
+        src="https://cdn.ethers.io/scripts/ethers-v4.min.js"
+        type="text/javascript">
+</script>
 </html>
