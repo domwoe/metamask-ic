@@ -1,8 +1,7 @@
-import { HttpAgent, requestIdOf, concat } from "@dfinity/agent";
+import { HttpAgent, requestIdOf, concat, fromHex, toHex, hash } from "@dfinity/agent";
 import { Secp256k1PublicKey} from "@dfinity/identity-secp256k1";
 import { IDL } from "@dfinity/candid";
 import { Principal } from "@dfinity/principal";
-import sha256 from 'crypto-js/sha256';
 import { canisterId } from "../../declarations/metamask_ic_backend";
 
 // Define gloabl variables 
@@ -75,27 +74,31 @@ document.querySelector("#greeting_form").addEventListener("submit", async (e) =>
   const requestId = await requestIdOf(request);
   console.log("----------REQUEST ID----------");
   console.log(requestId);
-  console.log(Buffer.from(requestId).toString('hex'));
+  console.log(toHex(requestId));
 
   // Prepare message to sign
   const msg = concat(domainSeparator, requestId);
-  const hash = sha256(msg).toString();
+  const hashed_msg = hash(msg);
  
+  console.log("----------HASH----------");
+  console.log(hashed_msg);
+
   let signature = await ethereum.request({
     method: 'eth_sign',
-    params: [accounts[0], '0x'+hash.toString()],
+    params: [accounts[0], '0x'+toHex(hashed_msg)],
   });
 
 
   // Strip v value (last byte) from signature
   signature = signature.slice(0, -2);
+  signature = signature.slice(2);
   console.log("----------SIGNATURE----------");
   console.log(signature);
 
   const signedRequest = {
     content: request,
     sender_pubkey: pubKeyDer,
-    sender_sig: ethers.utils.arrayify(signature),
+    sender_sig: fromHex(signature),
   }
 
   console.log(signedRequest);
@@ -105,7 +108,7 @@ document.querySelector("#greeting_form").addEventListener("submit", async (e) =>
   try {
     const response = await agent.submitRequest(req);
     console.log(response);
-    document.getElementById("greeting").innerText = response;
+    document.getElementById("greeting").innerText = JSON.stringify(response);
   } catch (error) {
     console.log(error);
   } finally {

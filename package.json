@@ -43,13 +43,6 @@
     "@dfinity/agent": "https://gitpkg.now.sh/domwoe/agent-js/packages/agent?feature/prepare-message",
     "@dfinity/candid": "^0.15.0",
     "@dfinity/identity-secp256k1": "^0.15.5",
-    "@dfinity/principal": "^0.15.5",
-    "browserify-zlib": "^0.2.0",
-    "crypto-browserify": "^3.12.0",
-    "crypto-js": "^4.1.1",
-    "https-browserify": "^1.0.0",
-    "stream-http": "^3.2.0",
-    "tweetnacl": "^1.0.3",
-    "url": "^0.11.0"
+    "@dfinity/principal": "^0.15.5"
   }
 }
