@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "build": "webpack",
-    "setup": "cp tsconfig.json ./node_modules/tsconfig.json && cd node_modules/@dfinity/agent && npm run build",
+    "patch-agent": "cp tsconfig.json ./node_modules/tsconfig.json && cd node_modules/@dfinity/agent && npm run build",
     "prebuild": "npm run generate",
     "start": "webpack serve --mode development --env development",
     "prestart": "npm run generate",
