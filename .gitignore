@@ -11,6 +11,7 @@
 .dfx/
 
 # generated files
+node_modules/
 src/declarations/
 
 # frontend code

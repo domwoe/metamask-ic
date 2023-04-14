@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "build": "webpack",
+    "setup": "cp tsconfig.json ./node_modules/tsconfig.json && cd node_modules/@dfinity/agent && npm run build",
     "prebuild": "npm run generate",
     "start": "webpack serve --mode development --env development",
     "prestart": "npm run generate",
@@ -39,6 +40,7 @@
     "last 2 edge version"
   ],
   "dependencies": {
+    "@dfinity/agent": "https://gitpkg.now.sh/domwoe/agent-js/packages/agent?feature/prepare-message",
     "@dfinity/candid": "^0.15.0",
     "@dfinity/identity-secp256k1": "^0.15.5",
     "@dfinity/principal": "^0.15.5",

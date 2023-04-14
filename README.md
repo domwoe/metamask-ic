@@ -4,11 +4,13 @@
 
 Example project to explore signing Internet Computer calls with Metamask.
 
-Don't run `npm install` since the node_modules folder is already included in the repo. This is because we use a patched version of the `@dfinity/agent` package.
 
 ```bash
 cd metamask_ic/
+npm install
+npm run setup
 dfx start --background --clean
+dfx deploy metamask_ic_backend
 npm run start
 ```
 
