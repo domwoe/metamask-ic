@@ -2,6 +2,8 @@
 
 Example project to explore signing Internet Computer calls with Metamask.
 
+You need to have the MetaMask browser extension installed, and you need to have `Toggle eth_sign requests` activated. You can find this setting in `settings > advanced` to the bottom.
+
 ## How to run?
 
 ```bash
