@@ -1,8 +1,8 @@
-import { HttpAgent, requestIdOf, concat, fromHex, toHex, hash } from "@dfinity/agent";
+import { HttpAgent, requestIdOf, concat, fromHex, toHex, hash, polling } from "@dfinity/agent";
 import { Secp256k1PublicKey} from "@dfinity/identity-secp256k1";
 import { IDL } from "@dfinity/candid";
 import { Principal } from "@dfinity/principal";
-import { canisterId } from "../../declarations/metamask_ic_backend";
+import { canisterId, idlFactory } from "../../declarations/metamask_ic_backend";
 
 // Define gloabl variables 
 
@@ -27,6 +27,41 @@ async function getPublicKey() {
   console.log('publicKey', publicKey);
   return publicKey;
 };
+
+
+async function signRequest(request) {
+
+  const requestId = await requestIdOf(request);
+  console.log("----------REQUEST ID----------");
+  console.log(requestId);
+  console.log(toHex(requestId));
+
+  // Prepare message to sign
+  const msg = concat(domainSeparator, requestId);
+  const hashed_msg = hash(msg);
+ 
+  console.log("----------HASH----------");
+  console.log(hashed_msg);
+
+  let signature = await ethereum.request({
+    method: 'eth_sign',
+    params: [accounts[0], '0x'+toHex(hashed_msg)],
+  });
+
+
+  // Strip v value (last byte) from signature
+  signature = signature.slice(0, -2);
+  signature = signature.slice(2);
+  console.log("----------SIGNATURE----------");
+  console.log(signature);
+
+  return {
+    content: request,
+    sender_pubkey: pubKeyDer,
+    sender_sig: fromHex(signature),
+  }
+
+}
 
 // Fetch root key for certificate validation during development
 if (process.env.DFX_NETWORK !== "ic") {
@@ -71,49 +106,45 @@ document.querySelector("#greeting_form").addEventListener("submit", async (e) =>
   const request = req.body; 
   console.log("----------REQUEST----------");
   console.log(request);
-  const requestId = await requestIdOf(request);
-  console.log("----------REQUEST ID----------");
-  console.log(requestId);
-  console.log(toHex(requestId));
 
-  // Prepare message to sign
-  const msg = concat(domainSeparator, requestId);
-  const hashed_msg = hash(msg);
- 
-  console.log("----------HASH----------");
-  console.log(hashed_msg);
+  req.body = await signRequest(request);
 
-  let signature = await ethereum.request({
-    method: 'eth_sign',
-    params: [accounts[0], '0x'+toHex(hashed_msg)],
-  });
-
-
-  // Strip v value (last byte) from signature
-  signature = signature.slice(0, -2);
-  signature = signature.slice(2);
-  console.log("----------SIGNATURE----------");
-  console.log(signature);
-
-  const signedRequest = {
-    content: request,
-    sender_pubkey: pubKeyDer,
-    sender_sig: fromHex(signature),
-  }
-
-  console.log(signedRequest);
-
-  req.body = signedRequest;
 
   try {
-    const response = await agent.submitRequest(req);
+    const {requestId, response} = await agent.submitRequest(req);
     console.log(response);
     document.getElementById("greeting").innerText = JSON.stringify(response);
+    response = await fetchResponse(requestId);
+    document.getElementById("greeting").innerText = response;
+
   } catch (error) {
     console.log(error);
   } finally {
     button.removeAttribute("disabled");
   }
 
+
   return false;
 });
+
+
+async function fetchResponse(requestId) {
+
+  const path = [new TextEncoder().encode('request_status'), requestId];
+  const rsRequest = await agent.createReadStateRequest({ paths: [path] });
+
+  rsRequest.body = await signRequest(rsRequest.body.content);
+
+  console.log(rsRequest);
+
+  const responseBytes = await polling.pollForResponse(agent, canisterId, requestId, rsRequest, polling.defaultStrategy);
+
+    // if (responseBytes !== undefined) {
+    //   return decodeReturnValue(func.retTypes, responseBytes);
+    // } else if (func.retTypes.length === 0) {
+    //   return undefined;
+    // } else {
+    //   throw new Error(`Call was returned undefined, but type [${func.retTypes.join(',')}].`);
+    // }
+
+}
