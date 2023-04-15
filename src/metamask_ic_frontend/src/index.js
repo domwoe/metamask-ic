@@ -1,4 +1,5 @@
-import { HttpAgent, requestIdOf, concat, fromHex, toHex, hash, polling } from "@dfinity/agent";
+import { Actor, HttpAgent, requestIdOf, concat, fromHex, toHex, hash, polling } from "@dfinity/agent";
+import { Delegation, DelegationChain, DelegationIdentity, Ed25519KeyIdentity } from "@dfinity/identity";
 import { Secp256k1PublicKey} from "@dfinity/identity-secp256k1";
 import { IDL } from "@dfinity/candid";
 import { Principal } from "@dfinity/principal";
@@ -7,13 +8,16 @@ import { canisterId, idlFactory } from "../../declarations/metamask_ic_backend";
 // Define gloabl variables 
 
 const domainSeparator = new TextEncoder().encode('\x0Aic-request');
+const DelegationDomainSeparator = new TextEncoder().encode('\x1Aic-request-auth-delegation');
+
 
 let pubKey;
 let pubKeyDer;
 let mmPrincipal;
 let accounts;
+let backend;
 
-const agent = new HttpAgent();
+let agent = new HttpAgent();
 
 
 // Get public key of Metamask account by recovering it from the signature of a message
@@ -28,6 +32,39 @@ async function getPublicKey() {
   return publicKey;
 };
 
+
+async function createDelegationIdentity() {
+
+  const sessionIdentity = Ed25519KeyIdentity.generate();
+  const sessionPubKey = sessionIdentity.getPublicKey();
+  const targets = [canisterId];
+  const delegation = new Delegation(
+    sessionPubKey.toDer(),
+    BigInt(new Date(Date.now() + 15 * 60 * 1000)) * BigInt(1000000), // In nanoseconds.
+    targets,
+  );
+
+  const msg = new Uint8Array([
+    ...DelegationDomainSeparator,
+    ...new Uint8Array(requestIdOf(delegation)),
+  ]);
+  const hashed_msg = hash(msg);
+
+  let signature = await ethereum.request({
+    method: 'eth_sign',
+    params: [accounts[0], '0x'+toHex(hashed_msg)],
+  });
+
+  // Strip v value (last byte) from signature
+  signature = signature.slice(0, -2);
+  signature = signature.slice(2);
+
+  signature = fromHex(signature);
+
+  const delegationChain = new DelegationChain([{ delegation, signature }], sessionPubKey.toDer());
+
+  return new DelegationIdentity(sessionIdentity, delegationChain);
+}
 
 async function signRequest(request) {
 
@@ -90,6 +127,31 @@ document.querySelector("#login_form").addEventListener("submit", async (e) => {
 });
 
 
+document.querySelector("#session_form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  console.log("Create session by asking MetaMask to sign a delegation");
+
+  const delegationIdentity = await createDelegationIdentity();
+
+  console.log(
+    "Delegation identity created."
+  );
+
+  console.log(delegationIdentity);
+
+  agent = new HttpAgent({ identity: delegationIdentity });
+  if (process.env.DFX_NETWORK === "local" || process.env.DFX_NETWORK === undefined) {
+    await agent.fetchRootKey();
+  };
+  backend = Actor.createActor(idlFactory, {
+    agent,
+    canisterId,
+  });
+
+});
+
+
 document.querySelector("#greeting_form").addEventListener("submit", async (e) => {
   e.preventDefault();
   console.log("greeting")
@@ -100,7 +162,24 @@ document.querySelector("#greeting_form").addEventListener("submit", async (e) =>
   button.setAttribute("disabled", true);
 
 
-  // Prepare an unsigned request
+  if (backend) {
+
+    try {
+
+      const result = await backend.greet(name);
+      document.getElementById("greeting").innerText = JSON.stringify(result);
+
+    } catch(e) {
+      console.log(e);
+    } finally {
+      button.removeAttribute("disabled");
+    }
+
+   
+
+  } else {
+
+    // Prepare an unsigned request
   let arg = new Uint8Array(IDL.encode([IDL.Text], [name]));
   const req = await agent.prepareCallRequest(canisterId, { methodName: "greet", arg }, mmPrincipal);
   const request = req.body; 
@@ -123,6 +202,7 @@ document.querySelector("#greeting_form").addEventListener("submit", async (e) =>
     button.removeAttribute("disabled");
   }
 
+  }
 
   return false;
 });

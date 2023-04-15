@@ -42,6 +42,7 @@
   "dependencies": {
     "@dfinity/agent": "https://gitpkg.now.sh/domwoe/agent-js/packages/agent?feature/prepare-message",
     "@dfinity/candid": "^0.15.0",
+    "@dfinity/identity": "^0.15.5",
     "@dfinity/identity-secp256k1": "^0.15.5",
     "@dfinity/principal": "^0.15.5",
     "crypto-browserify": "^3.12.0",
