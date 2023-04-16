@@ -76,7 +76,7 @@ async function signRequest(request) {
 
   const requestId = await requestIdOf(request);
   
-  document.getElementById("greeting").innerText = "Asking MetaMask to sign request: " + requestId;
+  document.getElementById("greeting").innerText = "Asking MetaMask to sign request: " + toHex(requestId);
 
   // Prepare message to sign
   const msg = concat(domainSeparator, requestId);
