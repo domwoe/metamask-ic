@@ -6,6 +6,7 @@ The project supports two types of modes:
 - **Direct Mode**: The user signs the request directly with MetaMask. This requires the user to approve every request. Since the Internet Computer requires authentication for readState requests multiple requests have to be signed per update call.
 - **Session Mode**: The user creates a session key pair and asks MetaMask to sign a delegation.
 
+You can check out the deployed [demo](https://4n2mr-ryaaa-aaaap-qba5q-cai.ic0.app/).
 ## Prerequisites
 You need to have the MetaMask browser extension installed, and you need to have `Toggle eth_sign requests` activated. You can find this setting in `settings > advanced` to the bottom.
 
