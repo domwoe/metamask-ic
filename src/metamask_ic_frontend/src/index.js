@@ -22,6 +22,9 @@ let agent = new HttpAgent();
 
 // Get public key of Metamask account by recovering it from the signature of a message
 async function getPublicKey() {
+
+  document.getElementById("greeting").innerText = "Asking MetaMask to sign a message to recover public key...";
+
   const provider = new ethers.providers.Web3Provider(window.ethereum)
   const signer = provider.getSigner();
   const message = 'Get Public Key';
@@ -35,9 +38,12 @@ async function getPublicKey() {
 
 async function createDelegationIdentity() {
 
+  document.getElementById("greeting").innerText = "Asking MetaMask to sign a delegation for a session key...";
+
+
   const sessionIdentity = Ed25519KeyIdentity.generate();
   const sessionPubKey = sessionIdentity.getPublicKey();
-  const targets = [canisterId];
+  const targets = [Principal.fromText(canisterId)];
   const delegation = new Delegation(
     sessionPubKey.toDer(),
     BigInt(new Date(Date.now() + 15 * 60 * 1000)) * BigInt(1000000), // In nanoseconds.
@@ -61,37 +67,30 @@ async function createDelegationIdentity() {
 
   signature = fromHex(signature);
 
-  const delegationChain = new DelegationChain([{ delegation, signature }], sessionPubKey.toDer());
+  const delegationChain = new DelegationChain([{ delegation, signature }], pubKeyDer);
 
-  return new DelegationIdentity(sessionIdentity, delegationChain);
+  return DelegationIdentity.fromDelegation(sessionIdentity, delegationChain);
 }
 
 async function signRequest(request) {
 
   const requestId = await requestIdOf(request);
-  console.log("----------REQUEST ID----------");
-  console.log(requestId);
-  console.log(toHex(requestId));
+  
+  document.getElementById("greeting").innerText = "Asking MetaMask to sign request: " + requestId;
 
   // Prepare message to sign
   const msg = concat(domainSeparator, requestId);
   const hashed_msg = hash(msg);
- 
-  console.log("----------HASH----------");
-  console.log(hashed_msg);
 
   let signature = await ethereum.request({
     method: 'eth_sign',
     params: [accounts[0], '0x'+toHex(hashed_msg)],
   });
 
-
   // Strip v value (last byte) from signature
   signature = signature.slice(0, -2);
   signature = signature.slice(2);
-  console.log("----------SIGNATURE----------");
-  console.log(signature);
-
+  
   return {
     content: request,
     sender_pubkey: pubKeyDer,
@@ -122,7 +121,7 @@ document.querySelector("#login_form").addEventListener("submit", async (e) => {
   pubKeyDer = key.toDer();
   mmPrincipal = Principal.selfAuthenticating(new Uint8Array(pubKeyDer));
 
-  console.log(mmPrincipal);
+  document.getElementById("greeting").innerText = "The principal of your MetaMask account is: " + mmPrincipal.toText() + "";
 
 });
 
@@ -130,13 +129,10 @@ document.querySelector("#login_form").addEventListener("submit", async (e) => {
 document.querySelector("#session_form").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  console.log("Create session by asking MetaMask to sign a delegation");
-
   const delegationIdentity = await createDelegationIdentity();
 
-  console.log(
-    "Delegation identity created."
-  );
+  document.getElementById("greeting").innerText = "Session created";
+
 
   console.log(delegationIdentity);
 
@@ -228,3 +224,15 @@ async function fetchResponse(requestId) {
     // }
 
 }
+
+
+(function(global, undefined) {
+  if (global.BigInt.prototype.toJSON === undefined) {
+    global.Object.defineProperty(global.BigInt.prototype, "toJSON", {
+        value: function() { return this.toString(); },
+        configurable: true,
+        enumerable: false,
+        writable: true
+    });
+  }
+})(window !== void 0 ? window : typeof global !== void 0 ? global : typeof self !== void 0 ? self : this);

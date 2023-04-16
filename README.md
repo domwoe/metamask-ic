@@ -1,7 +1,12 @@
 # metamask_ic
 
 Example project to explore signing Internet Computer calls with Metamask.
+The project supports two types of modes:
 
+- **Direct Mode**: The user signs the request directly with MetaMask. This requires the user to approve every request. Since the Internet Computer requires authentication for readState requests multiple requests have to be signed per update call.
+- **Session Mode**: The user creates a session key pair and asks MetaMask to sign a delegation.
+
+## Prerequisites
 You need to have the MetaMask browser extension installed, and you need to have `Toggle eth_sign requests` activated. You can find this setting in `settings > advanced` to the bottom.
 
 ## How to run?
@@ -26,7 +31,12 @@ Point your browser to http://localhost:8080 and check the console.
 - We remove the last byte from the signature, as the Internet Computer expects a 64-byte signature without the recovery byte.
 - We set `sender_pubkey` to the DER public key and `sender_sig` to the signature (after transforming it to a byte array)
 - Then we use the patched `@dfinity/agent` to submit the request.
+- If you click on "Create session", then we create a new session key pair and ask MetaMask to sign the delegation. We then initiate a new actor with this `DelegationIdentity` and use it to call the backend canister.
 
-## Issues
 
-- The `readState` request to fetch the response of an update call needs to be authenticated as well and would need another interaction with MetaMask in this model. 
+## ToDos
+
+- [ ] Fix `TypeError: Failed to execute 'fetch' on 'Window': Request with GET/HEAD method cannot have body.` for `readState` requests.
+- [ ] Decoding of response bytes.
+- [ ] Clean up code and nicer UI.
+- [ ] Add demonstration of Sign-In with Ethereum (SIWE) pattern, similar to [SIWE AuthZ example](https://github.com/domwoe/siwe_authz).
