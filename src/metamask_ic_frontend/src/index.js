@@ -125,7 +125,6 @@ document.querySelector("#login_form").addEventListener("submit", async (e) => {
 
 });
 
-
 document.querySelector("#session_form").addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -146,6 +145,38 @@ document.querySelector("#session_form").addEventListener("submit", async (e) => 
   });
 
 });
+
+
+// document.querySelector("#alt_session_form").addEventListener("submit", async (e) => {
+//   e.preventDefault();
+
+//   const sessionIdentity = Ed25519KeyIdentity.generate();
+
+//   const provider = new ethers.providers.Web3Provider(window.ethereum);
+
+
+
+//   signer = await provider.getSigner();
+
+//   const domain = {
+//     name: 'metamask-ic'
+//   };
+
+//   const types = {
+//     Delegation: [
+//       { name: 'SessionKey', type: 'string' },
+//     ]
+//   };
+
+//   const value = {
+//     SessionKey: toHex(sessionIdentity.getPublicKey())
+//   };
+
+//   const signature = await signer._signTypedData(domain, types, value);
+
+//   document.getElementById("greeting").innerText = "The principal of your MetaMask account is: " + mmPrincipal.toText() + "";
+
+// });
 
 
 document.querySelector("#greeting_form").addEventListener("submit", async (e) => {
@@ -184,13 +215,14 @@ document.querySelector("#greeting_form").addEventListener("submit", async (e) =>
 
   req.body = await signRequest(request);
 
+  console.log(req);
 
   try {
     const {requestId, response} = await agent.submitRequest(req);
     console.log(response);
     document.getElementById("greeting").innerText = JSON.stringify(response);
-    response = await fetchResponse(requestId);
-    document.getElementById("greeting").innerText = response;
+    const res = await fetchResponse(requestId);
+    document.getElementById("greeting").innerText = res;
 
   } catch (error) {
     console.log(error);
@@ -208,31 +240,13 @@ async function fetchResponse(requestId) {
 
   const path = [new TextEncoder().encode('request_status'), requestId];
   const rsRequest = await agent.createReadStateRequest({ paths: [path] });
+  
+  rsRequest.body.content.sender = mmPrincipal;
 
   rsRequest.body = await signRequest(rsRequest.body.content);
 
-  console.log(rsRequest);
+  const responseBytes = await polling.pollForResponse(agent, canisterId, requestId, polling.defaultStrategy, rsRequest);
 
-  const responseBytes = await polling.pollForResponse(agent, canisterId, requestId, rsRequest, polling.defaultStrategy);
-
-    // if (responseBytes !== undefined) {
-    //   return decodeReturnValue(func.retTypes, responseBytes);
-    // } else if (func.retTypes.length === 0) {
-    //   return undefined;
-    // } else {
-    //   throw new Error(`Call was returned undefined, but type [${func.retTypes.join(',')}].`);
-    // }
+  return IDL.decode([IDL.Text], responseBytes);
 
 }
-
-
-(function(global, undefined) {
-  if (global.BigInt.prototype.toJSON === undefined) {
-    global.Object.defineProperty(global.BigInt.prototype, "toJSON", {
-        value: function() { return this.toString(); },
-        configurable: true,
-        enumerable: false,
-        writable: true
-    });
-  }
-})(window !== void 0 ? window : typeof global !== void 0 ? global : typeof self !== void 0 ? self : this);
